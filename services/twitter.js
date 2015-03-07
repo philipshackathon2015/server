@@ -1,6 +1,7 @@
 var _ = require('underscore');
 var Promise = require('bluebird');
 var Twit = require('twit');
+var sentiment = require('./sentiment');
 
 var twitter = {
   initialize: function(config) {
@@ -29,16 +30,27 @@ var twitter = {
     var screename = options.screename || process.env.TWITTER_DEMO_SCREENNAME;
 
     return new Promise(function(resolve, reject) {
-      this.twit.get('statuses/user_timeline', { screen_name: screename }, function(err, data, response) {
-        if (err) { reject(err); }
+        this.twit.get('statuses/user_timeline', { screen_name: screename }, function(err, data, response) {
+          if (err) { reject(err); }
 
-        var tweets = data.map(function(tweet) {
-          return _.pick(tweet, 'created_at', 'text');
+          var tweets = data.map(function(tweet) {
+            return _.pick(tweet, 'created_at', 'text');
+          });
+
+          resolve(tweets);
+        });
+      }.bind(this))
+      .then(function(tweets) {
+        var tweetsWithSentiment = tweets.map(function(tweet) {
+          return Promise.props({
+            created_at: tweet.created_at,
+            text: tweet.text,
+            sentiment: sentiment.analyze(tweet.text)
+          });
         });
 
-        resolve(tweets);
+        return Promise.all(tweetsWithSentiment);
       });
-    }.bind(this));
   }
 };
 

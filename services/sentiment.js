@@ -8,7 +8,7 @@ var sentiment = {
 
     return request.get(url)
       .then(function(res) {
-        return { sentiment: JSON.parse(res) };
+        return JSON.parse(res);
       });
   }
 };
