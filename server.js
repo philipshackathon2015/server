@@ -63,12 +63,20 @@ passport.use(new FacebookStrategy({
   function(accessToken, refreshToken, profile, done) {
     graph.setAccessToken(accessToken);
     // user.id = profile.id
+    var statusArray = [];
     graph.get(profile.id + "?fields=feed", function(err, res) {
-      var feedArray = res.feed.data;
-      for( var key in feedArray) {
-        console.log(feedArray[key]);
+      if (res.feed !== null) {
+        var feedArray = res.feed.data;
+        for( var key in feedArray) {
+          console.log(feedArray[key].type)
+          if(feedArray[key].type === 'status') {
+            statusArray.push(feedArray[key].message)
+          }
+        }
+        console.log({statuses: statusArray});
       }
     });
+    return statusArray;
   }
 ));
 
