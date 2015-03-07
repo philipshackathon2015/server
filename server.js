@@ -4,8 +4,12 @@ var multer = require('multer');
 var app = express();
 var https = require('https');
 var passport = require('passport');
+var graph = require('fbgraph');
 var FacebookStrategy = require('passport-facebook').Strategy
 
+var user = {
+  id: 0
+};
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -18,6 +22,15 @@ app.get('/', function(req, res) {
 app.get('/login', function(req, res) {
   res.json({ msg: 'try again!' });
 });
+
+// app.get('/get_feed', function(req, res) {
+
+//   graph.get(user.id + "?fields=feed", function(err, res) {
+
+//       res.send(res.feed.data[0]);
+//     });
+// });
+
 
 
 app.set('port', (process.env.PORT || 3000));
@@ -36,13 +49,6 @@ app.get('/auth/facebook/callback',
     res.redirect('/');
   });
 
-app.post('/auth/facebook/token',
-  passport.authenticate('facebook-token'),
-  function (req, res) {
-    // do something with req.user
-    res.send(req.user? 200 : 401);
-  }
-);
 
 app.get('/logout', function(req, res){
   req.logout();
@@ -55,27 +61,14 @@ passport.use(new FacebookStrategy({
     callbackURL: "http://localhost:3000/auth/facebook/callback"
   },
   function(accessToken, refreshToken, profile, done) {
-    // User.findOrCreate({ facebookId: profile.id }, function(err, user) {
-    //   if (err) { return done(err); }
-    //   done(null, user);
-    // });
-    console.log(accessToken + " " + refreshToken + " " + profile)
-    console.log(profile.feed);
-    console.log(profile.id);
-    // if (done) {
-    // // https.get('https://graph.facebook.com/v2.2/' + profile.id + '/feed', function(res) {
-    // //   console.log(res);
-    // // });
-
-    // }
+    graph.setAccessToken(accessToken);
+    // user.id = profile.id
+    graph.get(profile.id + "?fields=feed", function(err, res) {
+      var feedArray = res.feed.data;
+      for( var key in feedArray) {
+        console.log(feedArray[key]);
+      }
+    });
   }
 ));
 
-app.get('/auth/facebook', passport.authenticate('facebook'));
-
-// Facebook will redirect the user to this URL after approval.  Finish the
-// authentication process by attempting to obtain an access token.  If
-// access was granted, the user will be logged in.  Otherwise,
-// authentication has failed.
-app.get('/auth/facebook/callback',
-  passport.authenticate('facebook', { successRedirect: '/',failureRedirect: '/login' }));
