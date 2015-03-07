@@ -2,6 +2,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var multer = require('multer');
 var app = express();
+var https = require('https');
 var passport = require('passport');
 var FacebookStrategy = require('passport-facebook').Strategy
 
@@ -25,7 +26,8 @@ app.listen(app.get('port'), function() {
 });
 
 app.get('/auth/facebook',
-  passport.authenticate('facebook'));
+  passport.authenticate('facebook', { scope: 'read_stream' })
+);
 
 app.get('/auth/facebook/callback',
   passport.authenticate('facebook', { failureRedirect: '/login', display: 'touch' }),
@@ -58,9 +60,14 @@ passport.use(new FacebookStrategy({
     //   done(null, user);
     // });
     console.log(accessToken + " " + refreshToken + " " + profile)
-    if (done) {
-      return done(profile);
-    }
+    console.log(profile.feed);
+    console.log(profile.id);
+    // if (done) {
+    // // https.get('https://graph.facebook.com/v2.2/' + profile.id + '/feed', function(res) {
+    // //   console.log(res);
+    // // });
+
+    // }
   }
 ));
 
