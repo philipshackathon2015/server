@@ -6,7 +6,7 @@ module.exports = function(err, result) {
 
   console.log('insert successful!');
 
-  var result = result[0];
+  result = result[0];
 
   if (result.text) {
     console.log('text: ', result.text);
