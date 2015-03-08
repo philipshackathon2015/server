@@ -3,6 +3,7 @@ var bodyParser = require('body-parser');
 var multer = require('multer');
 var Promise = require('bluebird');
 var twitter = require('./services/twitter')();
+var facebook = require('./services/facebook')();
 var sentiment = require('./services/sentiment');
 var app = express();
 var https = require('https');
@@ -17,13 +18,9 @@ app.use(bodyParser.json());
 app.use(multer({dest: '/tmp/'}));
 
 app.get('/', function(req, res) {
-  // res.json({ msg: 'Hello World!' });
-  res.json(globalShit);
+  res.json({ msg: 'Hello World!' });
 });
 
-app.get('/login', function(req, res) {
-  res.json({ msg: 'try again!' });
-});
 
 // app.get('/get_feed', function(req, res) {
 
@@ -58,19 +55,13 @@ app.get('/sentiment', function(req, res) {
 
 
 app.get('/fb-statuses', function(req, res, next) {
-  graph.setAccessToken(process.env.FB_ACCESS_TOKEN);
-  var statusArray = [];
-  graph.get(process.env.PROFILE_ID + "?fields=feed", function(err, graphRes) {
-      if (graphRes.feed !== null) {
-        var feedArray = graphRes.feed.data;
-        for( var key in feedArray) {
-
-          if(feedArray[key].type === 'status') {
-            statusArray.push(feedArray[key].message)
-          }
-        }
-        res.json({statuses: statusArray});
-      }
+  facebook.getStatuses()
+    .then(function(statuses) {
+      res.json(statuses);
+    })
+    .catch(function(err) {
+      console.log(err.stack);
+      res.json({ error: err.message });
     });
 });
 
@@ -86,7 +77,6 @@ app.get('/fb-statuses', function(req, res, next) {
 //     // Successful authentication, redirect home.
 //     res.redirect('/');
 //   });
-
 
 // app.get('/logout', function(req, res){
 //   req.logout();
@@ -126,4 +116,5 @@ app.set('port', (process.env.PORT || 3000));
 app.listen(app.get('port'), function() {
   console.log("Node app is running at localhost:" + app.get('port'));
 });
+
 
