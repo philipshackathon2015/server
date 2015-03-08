@@ -38,7 +38,7 @@ var twitter = {
         return new Promise(function(resolve, reject) {
             this.twit.get('statuses/user_timeline', queryOptions, function(err, data, response) {
               if (err) { reject(err); }
-              if (lastTweetStoredId && data) { data.pop(); }
+              if (data.length && lastTweetStoredId === _.last(data).id) { data.pop(); }
 
               var tweets = data.map(function(tweet) {
                 return _.pick(tweet, 'created_at', 'text', 'id');
