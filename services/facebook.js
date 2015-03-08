@@ -12,40 +12,61 @@ var facebook = {
     return this;
   },
 
-  getStatuses: function(options) {
+  getStatuses: function(options, db) {
     options = options || {};
 
     var profileId = options.PROFILE_ID || process.env.PROFILE_ID;
     var patientId = options.PATIENT_ID || process.env.DEMO_PATIENT_ID;
 
+    return this._getLastFacebookStatusCreatedAtDate(process.env.PROFILE_ID, db)
+      .bind(this)
+      .then(function(lastFacebookStatusCreatedAtDate) {
+        return new Promise(function(resolve, reject) {
+          this.graph.get(profileId + "?fields=feed", function(err, graphRes) {
+            if (err) { reject(err); }
+
+            var data = graphRes.feed.data;
+            var statuses = data.filter(function(post) {
+              var isNewPost = new Date(post.created_time) > lastFacebookStatusCreatedAtDate;
+
+              return post.message && post.from.id === profileId && isNewPost;
+            });
+
+            statuses = statuses.map(function(status) {
+              return _.pick(status, 'id', 'message', 'created_time');
+            });
+
+            resolve(statuses);
+          });
+        }.bind(this));
+      })
+      .then(function(statuses) {
+        var statusesWithSentiment = statuses.map(function(status) {
+          return Promise.props({
+            type: 'facebook',
+            social_user_uuid: profileId,
+            social_uuid: status.id,
+            patient_id: patientId,
+            created_at: status.created_time,
+            text: status.message,
+            sentiment: sentiment.analyze(status.message)
+          });
+        });
+
+        return Promise.all(statusesWithSentiment);
+      });
+  },
+
+  _getLastFacebookStatusCreatedAtDate: function(facebookUserId, db) {
     return new Promise(function(resolve, reject) {
-        this.graph.get(profileId + "?fields=feed", function(err, graphRes) {
+        db.collection('sentiment').findOne({ social_user_uuid: facebookUserId, type: 'facebook' }, { sort: { created_at: -1 } }, function(err, result) {
           if (err) { reject(err); }
 
-          var data = graphRes.feed.data;
-          var statuses = data.filter(function(post) {
-            return post.message && post.from.id === profileId;
-          });
+          var lastFacebookStatusCreatedAtDate = result ? result.created_at : 0;
 
-          statuses = statuses.map(function(status) {
-            return _.pick(status, 'message', 'created_time');
-          });
-
-          resolve(statuses);
-        });
-    }.bind(this))
-    .then(function(statuses) {
-      var statusesWithSentiment = statuses.map(function(status) {
-        return Promise.props({
-          patient_id: patientId,
-          created_at: status.created_time,
-          text: status.message,
-          sentiment: sentiment.analyze(status.message)
+          resolve(new Date(lastFacebookStatusCreatedAtDate));
         });
       });
-
-      return Promise.all(statusesWithSentiment);
-    });
   }
 };
 

@@ -40,7 +40,7 @@ app.get('/', function(req, res) {
 app.get('/tweets', function(req, res) {
   twitter.getTimeline(null, mongodb)
     .then(function(tweets) {
-      if (tweets) {
+      if (tweets.length) {
         sentimentCollection.insert(tweets, sentimentInsertCallback);
       }
 
@@ -52,8 +52,14 @@ app.get('/tweets', function(req, res) {
     });
 });
 
-app.get('last-tweet', function(res, res) {
-  sentimentCollection.findOne({ sort: {"social_uuid": -1} }, function(err, data) {
+app.get('/last-tweet', function(req, res) {
+  sentimentCollection.findOne({}, { sort: {"social_uuid": -1} }, function(err, data) {
+    res.json(data);
+  });
+});
+
+app.get('/last-fb', function(req, res) {
+  sentimentCollection.findOne({}, { sort: {"created_at": -1} }, function(err, data) {
     res.json(data);
   });
 });
@@ -70,9 +76,11 @@ app.get('/sentiment', function(req, res) {
 });
 
 app.get('/fb-statuses', function(req, res, next) {
-  facebook.getStatuses()
+  facebook.getStatuses(null, mongodb)
     .then(function(statuses) {
-      sentimentCollection.insert(statuses, sentimentInsertCallback);
+      if (statuses.length) {
+        sentimentCollection.insert(statuses, sentimentInsertCallback);
+      }
       res.json(statuses);
     })
     .catch(function(err) {

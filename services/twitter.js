@@ -33,8 +33,10 @@ var twitter = {
     return this._getLastTweetStoredId(process.env.TWITTER_DEMO_USERID, db)
       .bind(this)
       .then(function(lastTweetStoredId) {
+        var queryOptions = lastTweetStoredId ? { userId: userId, since_id: lastTweetStoredId } : { userId: userId };
+
         return new Promise(function(resolve, reject) {
-            this.twit.get('statuses/user_timeline', { user_id: userId, since_id: lastTweetStoredId }, function(err, data, response) {
+            this.twit.get('statuses/user_timeline', queryOptions, function(err, data, response) {
               if (err) { reject(err); }
               if (lastTweetStoredId && data) { data.pop(); }
 
@@ -65,7 +67,7 @@ var twitter = {
 
   _getLastTweetStoredId: function(twitterUserId, db) {
     return new Promise(function(resolve, reject) {
-        db.collection('sentiment').findOne({}, { sort: { social_uuid: -1 } }, function(err, result) {
+        db.collection('sentiment').findOne({ social_user_uuid: twitterUserId, type: 'twitter' }, { sort: { social_uuid: -1 } }, function(err, result) {
           if (err) { reject(err); }
 
           var lastTweetStoredId = result ? result.social_uuid : 0;
