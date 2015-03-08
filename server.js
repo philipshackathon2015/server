@@ -7,9 +7,6 @@ var passport = require('passport');
 var graph = require('fbgraph');
 var FacebookStrategy = require('passport-facebook').Strategy
 
-var user = {
-  id: 0
-};
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -64,11 +61,13 @@ passport.use(new FacebookStrategy({
     graph.setAccessToken(accessToken);
     // user.id = profile.id
     var statusArray = [];
+    console.log(profile.id + ' profile id')
+    console.log(accessToken)
     graph.get(profile.id + "?fields=feed", function(err, res) {
       if (res.feed !== null) {
         var feedArray = res.feed.data;
         for( var key in feedArray) {
-          console.log(feedArray[key].type)
+
           if(feedArray[key].type === 'status') {
             statusArray.push(feedArray[key].message)
           }
@@ -76,7 +75,7 @@ passport.use(new FacebookStrategy({
         console.log({statuses: statusArray});
       }
     });
-    return statusArray;
+    // return statusArray;
   }
 ));
 
