@@ -19,7 +19,7 @@ var facebook = {
 
           var data = graphRes.feed.data;
           var statuses = data.map(function(status) {
-            return _.pick(status, 'message');
+            return _.pick(status, 'message', 'created_time');
           });
 
           resolve(statuses);
@@ -28,7 +28,8 @@ var facebook = {
     .then(function(statuses) {
       var statusesWithSentiment = statuses.map(function(status) {
         return Promise.props({
-          message: status.message,
+          created_at: status.created_time,
+          text: status.message,
           sentiment: sentiment.analyze(status.message)
         });
       });

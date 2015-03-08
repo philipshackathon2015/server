@@ -11,8 +11,6 @@ var graph = require('fbgraph');
 // var passport = require('passport');
 // var FacebookStrategy = require('passport-facebook').Strategy
 
-
-
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(multer({dest: '/tmp/'}));
