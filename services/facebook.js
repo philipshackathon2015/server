@@ -16,6 +16,7 @@ var facebook = {
     options = options || {};
 
     var profileId = options.PROFILE_ID || process.env.PROFILE_ID;
+    var patientId = options.PATIENT_ID || process.env.DEMO_PATIENT_ID;
 
     return new Promise(function(resolve, reject) {
         this.graph.get(profileId + "?fields=feed", function(err, graphRes) {
@@ -36,6 +37,7 @@ var facebook = {
     .then(function(statuses) {
       var statusesWithSentiment = statuses.map(function(status) {
         return Promise.props({
+          patient_id: patientId,
           created_at: status.created_time,
           text: status.message,
           sentiment: sentiment.analyze(status.message)

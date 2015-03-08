@@ -24,32 +24,54 @@ var twitter = {
   /**
    *  Returns a Bluebird promise
    */
-  getTimeline: function(options) {
+  getTimeline: function(options, db) {
     options = options || {};
 
-    var screename = options.screename || process.env.TWITTER_DEMO_SCREENNAME;
+    var userId = options.userId || process.env.TWITTER_DEMO_USERID;
+    var patientId = options.PATIENT_ID || process.env.DEMO_PATIENT_ID;
 
+    return this._getLastTweetStoredId(process.env.TWITTER_DEMO_USERID, db)
+      .bind(this)
+      .then(function(lastTweetStoredId) {
+        return new Promise(function(resolve, reject) {
+            this.twit.get('statuses/user_timeline', { user_id: userId, since_id: lastTweetStoredId }, function(err, data, response) {
+              if (err) { reject(err); }
+              if (lastTweetStoredId && data) { data.pop(); }
+
+              var tweets = data.map(function(tweet) {
+                return _.pick(tweet, 'created_at', 'text', 'id');
+              });
+
+              resolve(tweets);
+            });
+          }.bind(this))
+          .then(function(tweets) {
+            var tweetsWithSentiment = tweets.map(function(tweet) {
+              return Promise.props({
+                type: 'twitter',
+                social_user_uuid: userId,
+                social_uuid: tweet.id,
+                patient_id: patientId,
+                created_at: tweet.created_at,
+                text: tweet.text,
+                sentiment: sentiment.analyze(tweet.text)
+              });
+            });
+
+            return Promise.all(tweetsWithSentiment);
+          });
+      });
+  },
+
+  _getLastTweetStoredId: function(twitterUserId, db) {
     return new Promise(function(resolve, reject) {
-        this.twit.get('statuses/user_timeline', { screen_name: screename }, function(err, data, response) {
+        db.collection('sentiment').findOne({}, { sort: { social_uuid: -1 } }, function(err, result) {
           if (err) { reject(err); }
 
-          var tweets = data.map(function(tweet) {
-            return _.pick(tweet, 'created_at', 'text');
-          });
+          var lastTweetStoredId = result ? result.social_uuid : 0;
 
-          resolve(tweets);
+          resolve(lastTweetStoredId);
         });
-      }.bind(this))
-      .then(function(tweets) {
-        var tweetsWithSentiment = tweets.map(function(tweet) {
-          return Promise.props({
-            created_at: tweet.created_at,
-            text: tweet.text,
-            sentiment: sentiment.analyze(tweet.text)
-          });
-        });
-
-        return Promise.all(tweetsWithSentiment);
       });
   }
 };
