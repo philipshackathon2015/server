@@ -9,15 +9,11 @@ var graph = require('fbgraph');
 var MongoClient = require('mongodb').MongoClient;
 var twitter = require('./services/twitter')();
 var facebook = require('./services/facebook')();
+var mongoLogger = require('./services/mongoLogger');
+var socialWorker = require('./services/socialWorker');
 var mongodb;
 var sentimentCollection;
-var sentimentInsertCallback = function(err, result) {
-  if(err) {
-    console.error('insert failed:',err);
-  } else {
-    console.log("Insert successful!");
-  }
-};
+
 
 MongoClient.connect(process.env.MONGO_LAB_URL, function(err, db) {
   if(err) {
@@ -26,6 +22,7 @@ MongoClient.connect(process.env.MONGO_LAB_URL, function(err, db) {
     console.log("connected to mongo!");
     mongodb = db;
     sentimentCollection = mongodb.collection('sentiment');
+    socialWorker.start(null, mongodb);
   }
 });
 
@@ -41,7 +38,7 @@ app.get('/tweets', function(req, res) {
   twitter.getTimeline(null, mongodb)
     .then(function(tweets) {
       if (tweets.length) {
-        sentimentCollection.insert(tweets, sentimentInsertCallback);
+        sentimentCollection.insert(tweets, mongoLogger);
       }
 
       res.json({ tweets: tweets });
@@ -79,7 +76,7 @@ app.get('/fb-statuses', function(req, res, next) {
   facebook.getStatuses(null, mongodb)
     .then(function(statuses) {
       if (statuses.length) {
-        sentimentCollection.insert(statuses, sentimentInsertCallback);
+        sentimentCollection.insert(statuses, mongoLogger);
       }
       res.json(statuses);
     })
