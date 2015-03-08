@@ -3,7 +3,11 @@
   ```
   npm install -g foreman
   ```
-2. Install dependencies and then just type
+2. Make sure you have nodemon installed
+  ```
+  npm install -g nodemon
+  ```
+3. Install dependencies and then just type
   ```
   npm start
   ```
