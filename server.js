@@ -13,7 +13,8 @@ app.use(bodyParser.json());
 app.use(multer({dest: '/tmp/'}));
 
 app.get('/', function(req, res) {
-  res.json({ msg: 'Hello World!' });
+  // res.json({ msg: 'Hello World!' });
+  res.json(globalShit);
 });
 
 app.get('/login', function(req, res) {
@@ -35,13 +36,33 @@ app.listen(app.get('port'), function() {
   console.log("Node app is running at localhost:" + app.get('port'));
 });
 
+
+app.get('/facebook/statuses', function(req, res, next) {
+  graph.setAccessToken(process.env.FB_ACCESS_TOKEN);
+  var statusArray = [];
+  graph.get(process.env.PROFILE_ID + "?fields=feed", function(err, graphRes) {
+      if (graphRes.feed !== null) {
+        var feedArray = graphRes.feed.data;
+        for( var key in feedArray) {
+
+          if(feedArray[key].type === 'status') {
+            statusArray.push(feedArray[key].message)
+          }
+        }
+        res.json({statuses: statusArray});
+      }
+    });
+});
+
 app.get('/auth/facebook',
   passport.authenticate('facebook', { scope: 'read_stream' })
+  // console.log(fuck);
 );
 
 app.get('/auth/facebook/callback',
   passport.authenticate('facebook', { failureRedirect: '/login', display: 'touch' }),
   function(req, res) {
+    console.log(res);
     // Successful authentication, redirect home.
     res.redirect('/');
   });
@@ -59,6 +80,8 @@ passport.use(new FacebookStrategy({
   },
   function(accessToken, refreshToken, profile, done) {
     graph.setAccessToken(accessToken);
+
+    globalShit = accessToken;
     // user.id = profile.id
     var statusArray = [];
     console.log(profile.id + ' profile id')
@@ -75,7 +98,7 @@ passport.use(new FacebookStrategy({
         console.log({statuses: statusArray});
       }
     });
-    // return statusArray;
+    return statusArray;
   }
 ));
 
